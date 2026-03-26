@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<stdbool.h>
+#include<string.h>
 int main(int argc, char* argv[]){
  if(argc<2){
   printf("./main ./test.js");
@@ -33,31 +34,115 @@ int main(int argc, char* argv[]){
   printf("fread fail");
   return 6;
  }
- printf("%s",fs);
  fclose(f);
  const int toklen=51;
- char* tok=malloc(toklen*sizeof(char));
- if(tok==NULL){
-  printf("tok malloc fail");
-  return 7;
+ enum TType{
+   TT_ID,TT_DOT,TT_LPAR,TT_QT,TT_STR,TT_RPAR,TT_SEM
+ };
+ struct Token{
+  int index;
+  int l;
+  int c;
+  enum TType type;
+  char* lex;
+ };
+ struct TList {
+  struct Token* arr;
+  int len;
+ } *tokL;
+ tokL = malloc(sizeof(struct TList));
+ if(tokL==NULL){
+  printf("TokenList malloc fail");
+  return 8;
  }
+ tokL->arr = malloc(10*sizeof(struct Token));
+ if(tokL->arr==NULL){
+  printf("TokenArray malloc fail");
+  return 9;
+ }
+ tokL->len = 10;
  long pos=0;
  bool ts=false;
+ long start=-1;
+ int l=0,c=0,i=0,s=0,t=0;
  while(pos<size+1){
   bool isNum = fs[pos]>=48&&fs[pos]<=57;
   bool isAlC = fs[pos]>=65&&fs[pos]<=90;
   bool isAlS = fs[pos]>=97&&fs[pos]<=122;
   bool isAlp = isAlC||isAlS;
   bool isAlNu = isAlp||isNum;
-  bool isWs = fs[pos]==32||fs[pos]==9||fs[pos]==10;
+  bool isNL = fs[pos]==10;
+  bool isWs = fs[pos]==0||fs[pos]==32||fs[pos]==9||isNL;
   bool isQuo = fs[pos]==34;
   bool isPnc = fs[pos]==46||fs[pos]==40||fs[pos]==41||fs[pos]==59||isQuo;
-  if(isAlNu)printf("A");
-  if(isWs)printf("W");
-  if(isPnc)printf("P");
+  if(i>=tokL->len){
+   tokL->arr = realloc(tokL->arr, 2*tokL->len*sizeof(struct Token));
+   if(tokL->arr==NULL){
+    printf("TokenArray Re malloc fail");
+    return 10;
+   }
+   tokL->len = 2*tokL->len;
+  }
+  if(isAlNu){
+   if(ts==false){
+    ts=true;
+    start=pos;
+   }
+  }else{
+   if(ts==true){
+    ts=false;
+    s=pos-start+1;
+    char* tok=malloc(s*sizeof(char));
+    if(tok==NULL){
+     printf("tok malloc fail");
+     return 7;
+    }
+    memcpy(tok,fs+start,s);
+    tok[s-1]='\0';
+    tokL->arr[i].index=i;
+    tokL->arr[i].l=l;
+    tokL->arr[i].c=start;
+    tokL->arr[i].type=TT_ID;
+    tokL->arr[i].lex=tok;
+    i++;
+   }
+   if (!isWs){
+    if(fs[pos]==46){
+     t=TT_DOT;
+    }else if(fs[pos]==40){
+     t=TT_LPAR;
+    }else if(fs[pos]==34){
+     t=TT_QT;
+    }else if(fs[pos]==41){
+     t=TT_RPAR;
+    }else if(fs[pos]==59){
+     t=TT_SEM;
+    }
+    tokL->arr[i].index=i;
+    tokL->arr[i].l=l;
+    tokL->arr[i].c=pos;
+    tokL->arr[i].type=t;
+    char* tok1=malloc(2*sizeof(char));
+     if(tok1==NULL){
+      printf("tok malloc fail");
+      return 7;
+     }
+     tok1[0]=fs[pos];
+     tok1[1]='\0';
+    tokL->arr[i].lex=tok1;
+    i++;
+   }
+  }
+  if(isNL){
+   l++;
+   c=0;
+  }
   pos++;
+  c++;
+ }
+ for(int j=0;j<i;j++){
+  printf("i:%d l:%d c:%d t:%d lex:%s \n",tokL->arr[j].index,tokL->arr[j].l,tokL->arr[j].c,tokL->arr[j].type,tokL->arr[j].lex);
  }
  free(fs);
- free(tok);
  return 0;
 }
