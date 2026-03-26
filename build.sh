@@ -1,4 +1,4 @@
 #!/bin/bash
-gcc main.c -o main
+gcc -std=c23 main.c -o main
 ./main ./test.js
 rm ./main
