@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 int main(int argc, char* argv[]){
  if(argc<2){
   printf("./main ./test.js");
@@ -19,7 +20,21 @@ int main(int argc, char* argv[]){
   printf("fsize tell fail");
   return 4;
  }
- printf("%ld",size);
+ rewind(f);
+ char* fs=malloc((size+1)*sizeof(char));
+ if(fs==NULL){
+  printf("malloc fail");
+  return 5;
+ }
+ fs[size+1]='\0';
+ size_t rc=fread(fs,sizeof(char),size,f);
+ if(rc!=size){
+  printf("fread fail");
+  return 6;
+ }
+ printf("%ld",rc);
+ printf("%s",fs);
+ free(fs);
  fclose(f);
  return 0;
 }
