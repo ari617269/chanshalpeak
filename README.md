@@ -1,5 +1,6 @@
 ### Steps
 
+- [X] 008 Parser hardcoded pattern
 - [X] 007 Token List creation
 - [X] 006 Token char classification
 - [X] 005 File read memory

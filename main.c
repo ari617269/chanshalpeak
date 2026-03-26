@@ -35,7 +35,6 @@ int main(int argc, char* argv[]){
   return 6;
  }
  fclose(f);
- const int toklen=51;
  enum TType{
    TT_ID,TT_DOT,TT_LPAR,TT_QT,TT_STR,TT_RPAR,TT_SEM
  };
@@ -140,9 +139,91 @@ int main(int argc, char* argv[]){
   pos++;
   c++;
  }
- for(int j=0;j<i;j++){
-  printf("i:%d l:%d c:%d t:%d lex:%s \n",tokL->arr[j].index,tokL->arr[j].l,tokL->arr[j].c,tokL->arr[j].type,tokL->arr[j].lex);
- }
  free(fs);
+ fs=NULL;
+ constexpr int maxargs=10;  
+ struct CallExp{
+  struct Callee {
+   struct Token object;
+   struct Token property;
+  } callee;
+  struct Arguments {
+    int p;
+    struct Token arg;
+  } arguments[maxargs];
+  int l;
+ };
+ struct Stat{
+  enum STType{ STT_NOOP, STT_CALL } type;
+  union {
+   struct CallExp cExp;
+  };
+ };
+ struct Prog{
+  struct Stat* st;
+  int l;
+ } *pr;
+ pr=malloc(sizeof(struct Prog));
+ if(pr==NULL){
+  printf("program malloc fail");
+  return 11;
+ }
+ pr->st=malloc(2*sizeof(struct Stat));
+ if(pr->st==NULL){
+  printf("statement list malloc fail");
+  return 12;
+ }
+ pr->l=2;
+ int tl = i,j=0;
+ i=0,start=0;
+ while(j<tl){
+  if(i>=pr->l){
+    pr->st=realloc(pr->st,2*pr->l*sizeof(struct Stat));
+    if(pr->st==NULL){
+     printf("statement list realloc fail");
+     return 12;
+    }
+    pr->l=2*pr->l;
+  }
+  if(tokL->arr[j].type==TT_SEM){
+   const int callPttr[] = {TT_ID,TT_DOT,TT_ID,TT_LPAR,TT_QT,TT_ID,TT_QT,TT_RPAR,TT_SEM};
+   int k=start;
+   bool patter=true;
+   while(k<j){
+    if(tokL->arr[k].type!=callPttr[k]){
+      patter=false;
+      break;
+    }
+    k++;
+   }
+   if(patter==false){
+    printf("invalid call exp pattern from l%d:c%d to l%d:c%d",tokL->arr[start].l,tokL->arr[start].c,tokL->arr[j-1].l,tokL->arr[j-1].c);
+    return 13;
+   }else{
+    pr->st[i].type=STT_CALL;
+    memcpy(&(pr->st[i].cExp.callee.object), &(tokL->arr[start]), sizeof(struct Token));
+    memcpy(&(pr->st[i].cExp.callee.property), &(tokL->arr[start+2]), sizeof(struct Token));
+    memcpy(&(pr->st[i].cExp.arguments[0].arg), &(tokL->arr[start+5]), sizeof(struct Token));
+    pr->st[i].cExp.arguments[0].p=0;
+    pr->st[i].cExp.l=1;
+   }
+   i++;
+   start=i;
+  }
+  j++;
+ }
+ free(tokL->arr);
+ free(tokL);
+ auto ee = pr->st[0].cExp;
+ printf("%p->%p->{%d,%d,%d}\n",pr,pr->st,pr->l,pr->st[0].type,ee.l);
+ auto cc = ee.callee;
+ auto aa = ee.arguments;
+ struct Token a[] = { cc.object, cc.property, aa->arg };
+ for(j=0;j<3;j++){
+  printf("");
+  printf("i:%d l:%d c:%d t:%d lex:%s \n",a[j].index,a[j].l,a[j].c,a[j].type,a[j].lex);
+ }
+ free(pr->st);
+ free(pr);
  return 0;
 }
